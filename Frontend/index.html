@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Predictive Maintenance Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Predictive Maintenance System</h1>
+    <button id="btn-refresh">🔄 Refresh</button>
+  </header>
+
+  <main class="dashboard">
+    <!-- Sidebar for equipment list -->
+    <aside class="sidebar">
+      <h2>Equipment</h2>
+      <ul id="equipment-list"></ul>
+    </aside>
+
+    <!-- Center section for live data -->
+    <section class="main-content">
+      <div class="equipment-info">
+        <h2 id="title">Select Equipment</h2>
+        <pre id="sensor-json">--</pre>
+      </div>
+
+      <div class="prediction-card">
+        <h3>Status: <span id="pred-status">--</span></h3>
+        <p>Failure Probability: <strong id="pred-prob">--</strong></p>
+        <canvas id="chart"></canvas>
+      </div>
+    </section>
+
+    <!-- Right panel for alerts and maintenance -->
+    <aside class="right-panel">
+      <div class="alerts">
+        <h2>Alerts</h2>
+        <ul id="alert-list"></ul>
+      </div>
+
+      <div class="maintenance">
+        <h2>Maintenance</h2>
+        <input id="wo-title" placeholder="Work order title" />
+        <textarea id="wo-notes" placeholder="Notes"></textarea>
+        <div class="wo-buttons">
+          <button id="btn-create">➕ Create</button>
+          <button id="btn-create-workorder">⚙️ Auto-Create</button>
+        </div>
+        <ul id="workorders"></ul>
+      </div>
+    </aside>
+  </main>
+
+  <footer>© 2025 Predictive Maintenance System</footer>
+
+  <script src="script.js"></script>
+  <!-- Maintenance Alert Modal -->
+<div id="alert-modal" class="modal">
+  <div class="modal-content">
+    <h2>⚠️ Maintenance Required!</h2>
+    <p id="alert-message">High temperature or vibration detected.</p>
+    <button id="btn-close-modal">Acknowledge</button>
+  </div>
+</div>
+
+<!-- Sound Alert -->
+<audio id="alert-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+</body>
+</html>
