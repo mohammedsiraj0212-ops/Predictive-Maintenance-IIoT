@@ -1,11 +1,12 @@
 /**
- * Predictive Maintenance Backend
- * - Simulates multiple equipment sensor streams
- * - Provides REST endpoints for sensor data, prediction, equipment list, alerts, maintenance
+ * Predictive Maintenance Backend (Clean Version)
+ * ---------------------------------------------
+ * Simulates multiple equipment sensor streams
+ * Provides REST endpoints for sensor data, prediction, equipment list, alerts, maintenance
  *
  * Run:
  *   npm install
- *   npm run dev
+ *   node server.js
  */
 
 const express = require("express");
@@ -16,7 +17,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ---------- In-memory DB (simple for demo) ----------
+// ---------- In-memory DB (simple demo) ----------
 const equipment = [
   { id: "EQ-001", name: "Pump A1", type: "Pump", location: "Plant 1", model: "P100", warranty: "2026-06-30" },
   { id: "EQ-002", name: "Compressor B2", type: "Compressor", location: "Plant 2", model: "C200", warranty: "2027-01-12" },
@@ -40,34 +41,31 @@ function rand(min, max) {
 }
 
 function generateSensorReading(equipmentId) {
-  // Simple simulated sensors: temperature(°C), vibration(mm/s), pressure(bar), rpm
   return {
     equipmentId,
     timestamp: Date.now(),
-    temperature: +(60 + Math.random() * 50).toFixed(2), // 60 - 110
-    vibration: +(0.5 + Math.random() * 6).toFixed(2),   // 0.5 - 6.5
-    pressure: +(1 + Math.random() * 9).toFixed(2),      // 1 - 10
-    rpm: Math.round(800 + Math.random() * 1600)         // 800 - 2400
+    temperature: +(60 + Math.random() * 50).toFixed(2), // 60–110 °C
+    vibration: +(0.5 + Math.random() * 6).toFixed(2),   // 0.5–6.5 mm/s
+    pressure: +(1 + Math.random() * 9).toFixed(2),      // 1–10 bar
+    rpm: Math.round(800 + Math.random() * 1600)         // 800–2400 rpm
   };
 }
 
-// Simple predictive score: normalized weighted sum
+// predictive logic
 function predictFromReading(reading) {
-  // weights (tunable)
   const wTemp = 0.4;
   const wVib = 0.35;
   const wPres = 0.15;
   const wRpm = 0.1;
 
-  // normalize values to 0..1 by expected max values
   const tempNorm = Math.min(reading.temperature / 120, 1);
   const vibNorm = Math.min(reading.vibration / 10, 1);
   const presNorm = Math.min(reading.pressure / 12, 1);
   const rpmNorm = Math.min(reading.rpm / 3000, 1);
 
   const score = tempNorm * wTemp + vibNorm * wVib + presNorm * wPres + rpmNorm * wRpm;
-  // convert to probability 0..1 (rough)
   const failure_probability = Math.min(Math.max(score, 0), 1);
+
   let status = "Healthy";
   if (failure_probability > 0.75) status = "Critical";
   else if (failure_probability > 0.5) status = "Warning";
@@ -75,7 +73,7 @@ function predictFromReading(reading) {
   return { failure_probability: +failure_probability.toFixed(2), status };
 }
 
-// generate alert if thresholds/prediction exceed
+// alert generator
 function maybeGenerateAlert(equipmentId, reading, prediction) {
   if (prediction.failure_probability >= 0.75 || reading.vibration > 5 || reading.temperature > 105) {
     const level = prediction.failure_probability >= 0.75 ? "Critical" : "High";
@@ -88,19 +86,16 @@ function maybeGenerateAlert(equipmentId, reading, prediction) {
       createdAt: Date.now(),
       acknowledged: false
     };
-    alerts.unshift(alert); // newest first
-    // keep small
+    alerts.unshift(alert);
     if (alerts.length > 200) alerts.pop();
     return alert;
   }
   return null;
 }
 
-// ---------- Periodic sensor simulation ----------
+// ---------- Periodic Sensor Simulation ----------
 setInterval(() => {
-  // update sensors for each equipment
   equipment.forEach(eq => {
-    // small random walk from previous value
     const prev = sensorState[eq.id] || generateSensorReading(eq.id);
     const newReading = {
       equipmentId: eq.id,
@@ -112,25 +107,20 @@ setInterval(() => {
     };
     sensorState[eq.id] = newReading;
 
-    // compute prediction & maybe create alerts
     const pred = predictFromReading(newReading);
     maybeGenerateAlert(eq.id, newReading, pred);
   });
-}, 2000); // every 2s
+}, 2000);
 
 // ---------- API endpoints ----------
-
-// GET / -> simple info
 app.get("/", (req, res) => {
-  res.json({ message: "Predictive Maintenance API (Express) running" });
+  res.json({ message: "✅ Predictive Maintenance API running successfully!" });
 });
 
-// GET /equipment -> list all equipment
 app.get("/equipment", (req, res) => {
   res.json(equipment);
 });
 
-// GET /sensor/:id -> latest sensor reading for an equipment
 app.get("/sensor/:id", (req, res) => {
   const id = req.params.id;
   const data = sensorState[id];
@@ -138,13 +128,10 @@ app.get("/sensor/:id", (req, res) => {
   res.json(data);
 });
 
-// GET /sensors -> latest readings for all equipment
 app.get("/sensors", (req, res) => {
-  const arr = Object.values(sensorState).sort((a,b)=>b.timestamp-a.timestamp);
-  res.json(arr);
+  res.json(Object.values(sensorState).sort((a, b) => b.timestamp - a.timestamp));
 });
 
-// POST /predict/:id -> predict from the current reading for equipment id
 app.post("/predict/:id", (req, res) => {
   const id = req.params.id;
   const reading = sensorState[id];
@@ -153,12 +140,11 @@ app.post("/predict/:id", (req, res) => {
   res.json({ ...result, reading });
 });
 
-// GET /alerts -> list alerts
+// Alerts API
 app.get("/alerts", (req, res) => {
   res.json(alerts);
 });
 
-// POST /alerts/:id/ack -> acknowledge alert
 app.post("/alerts/:id/ack", (req, res) => {
   const id = req.params.id;
   const a = alerts.find(x => x.id === id);
@@ -167,12 +153,11 @@ app.post("/alerts/:id/ack", (req, res) => {
   res.json(a);
 });
 
-// GET /maintenance -> list logs
+// Maintenance API
 app.get("/maintenance", (req, res) => {
   res.json(maintenanceLogs);
 });
 
-// POST /maintenance -> create new maintenance order
 app.post("/maintenance", (req, res) => {
   const { equipmentId, title, notes } = req.body;
   if (!equipmentId || !title) return res.status(400).json({ error: "equipmentId & title required" });
@@ -188,7 +173,6 @@ app.post("/maintenance", (req, res) => {
   res.json(item);
 });
 
-// POST /workorder/:id/close -> close maintenance
 app.post("/workorder/:id/close", (req, res) => {
   const id = req.params.id;
   const it = maintenanceLogs.find(m => m.id === id);
@@ -197,43 +181,8 @@ app.post("/workorder/:id/close", (req, res) => {
   res.json(it);
 });
 
-// Start server
+// ---------- Start Server ----------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ Predictive Maintenance Backend running on port ${PORT}`);
-});
-// --- Alerts API (to handle maintenance alerts) ---
-
-let alerts = []; // temporary in-memory store
-
-// GET all alerts
-app.get("/alerts", (req, res) => {
-  res.json(alerts);
-});
-
-// POST new alert
-app.post("/alerts", (req, res) => {
-  const alert = {
-    id: Date.now(),
-    equipmentId: req.body.equipmentId,
-    level: req.body.level,
-    message: req.body.message,
-    timestamp: new Date().toISOString(),
-    acknowledged: false
-  };
-  alerts.push(alert);
-  console.log("⚠️ New alert received:", alert);
-  res.status(201).json(alert);
-});
-
-// POST acknowledge alert
-app.post("/alerts/:id/ack", (req, res) => {
-  const id = parseInt(req.params.id);
-  const alert = alerts.find(a => a.id === id);
-  if (alert) {
-    alert.acknowledged = true;
-    res.json({ message: "Alert acknowledged", alert });
-  } else {
-    res.status(404).json({ error: "Alert not found" });
-  }
 });
