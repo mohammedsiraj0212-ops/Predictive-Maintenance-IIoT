@@ -5,7 +5,7 @@
  * - Now includes Maintenance Alert if temperature >75°C or vibration >2.5
  */
 
-const API_BASE = "http://localhost:5000"; // change after deploy
+const API_BASE = "https://predictive-maintenance-iiot.onrender.com"; // ✅ updated to Render URL
 
 let selectedEquipmentId = null;
 const equipmentListEl = document.getElementById("equipment-list");
@@ -90,8 +90,8 @@ async function fetchAndUpdate() {
     predProbEl.textContent = (pred.failure_probability ?? 0).toFixed(2);
 
     // style status
-    predStatusEl.style.background = 
-      pred.status === "Critical" ? "#ef4444" : 
+    predStatusEl.style.background =
+      pred.status === "Critical" ? "#ef4444" :
       pred.status === "Warning" ? "#f59e0b" : "#10b981";
 
     // 🚨 Maintenance Alert logic
@@ -202,7 +202,8 @@ document.getElementById("btn-create").onclick = async () => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ equipmentId: selectedEquipmentId, title, notes })
   });
-  document.getElementById("wo-title").value = ""; document.getElementById("wo-notes").value = "";
+  document.getElementById("wo-title").value = ""; 
+  document.getElementById("wo-notes").value = "";
   fetchAndUpdate();
 };
 
@@ -220,4 +221,3 @@ document.getElementById("btn-refresh").onclick = fetchAndUpdate;
 loadEquipment();
 loadAlertsOnce();
 setInterval(fetchAndUpdate, 2000);
-
