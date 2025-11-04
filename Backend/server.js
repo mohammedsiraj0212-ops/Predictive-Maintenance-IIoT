@@ -202,3 +202,38 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ Predictive Maintenance Backend running on port ${PORT}`);
 });
+// --- Alerts API (to handle maintenance alerts) ---
+
+let alerts = []; // temporary in-memory store
+
+// GET all alerts
+app.get("/alerts", (req, res) => {
+  res.json(alerts);
+});
+
+// POST new alert
+app.post("/alerts", (req, res) => {
+  const alert = {
+    id: Date.now(),
+    equipmentId: req.body.equipmentId,
+    level: req.body.level,
+    message: req.body.message,
+    timestamp: new Date().toISOString(),
+    acknowledged: false
+  };
+  alerts.push(alert);
+  console.log("⚠️ New alert received:", alert);
+  res.status(201).json(alert);
+});
+
+// POST acknowledge alert
+app.post("/alerts/:id/ack", (req, res) => {
+  const id = parseInt(req.params.id);
+  const alert = alerts.find(a => a.id === id);
+  if (alert) {
+    alert.acknowledged = true;
+    res.json({ message: "Alert acknowledged", alert });
+  } else {
+    res.status(404).json({ error: "Alert not found" });
+  }
+});
